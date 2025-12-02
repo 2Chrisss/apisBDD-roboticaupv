@@ -99,3 +99,9 @@ app.get('/api/obtenerTodo', async (req, res) => {
         if (connection) connection.release();
     }
 });
+
+app.listen(PORT, () => {
+    console.log('Servidor iniciado');
+
+
+})
