@@ -84,7 +84,7 @@ app.post('/api/registrarDatos', async (req, res) => {
             return res.status(400).json({ error: 'Ningún dato enviado coincide con la configuración del robot' });
         }
 
-        const sqlInsert = `INSERT INTO RegistroRobot (idRobot, idCaracteristica, valorCaracteristica) VALUES ?`;
+        const sqlInsert = `INSERT INTO RegistroRobot (idRobot, idCaracteristica, valorCaracteristica, timestamp) VALUES ?`;
         const [result] = await connection.query(sqlInsert, [filasParaInsertar]);
 
         res.json({ 
