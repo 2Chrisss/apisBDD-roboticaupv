@@ -1,12 +1,18 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const app = express();
+const cors = require('cors');
 
 
 const PORT = 3000; 
 
-app.use(express.json());
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:3001', 'http://tu-ip-ec2:80'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 
+app.use(express.json());
 
 const pool = mysql.createPool({
     host: 'localhost',      
