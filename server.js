@@ -6,12 +6,7 @@ const cors = require('cors');
 
 const PORT = 3000; 
 
-app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3001', 'http://tu-ip-ec2:80'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
-
+app.use(cors());
 app.use(express.json());
 
 const pool = mysql.createPool({
@@ -127,7 +122,7 @@ app.get('/api/obtenerTodo', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0',() => {
     console.log('Servidor iniciado');
 
 
