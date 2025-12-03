@@ -70,13 +70,13 @@ app.post('/api/registrarDatos', async (req, res) => {
         });
 
         const filasParaInsertar = [];
-
+        const ahora = new Date();
         for (const key in datos) {
             if (key === 'id') continue;
             if (mapaPermitido[key]) { 
                 const idCaracteristica = mapaPermitido[key];
                 const valor = String(datos[key]);
-                filasParaInsertar.push([idRobot, idCaracteristica, valor]);
+                filasParaInsertar.push([idRobot, idCaracteristica, valor, ahora]);
             }
         }
 
