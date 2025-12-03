@@ -18,6 +18,34 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+const cachePermisos = new Map();
+const CACHE_TTL = 5 * 60 * 1000; 
+
+async function obtenerPermisosRobot(connection, idRobot) {
+    const cacheKey = `robot_${idRobot}`;
+    const cached = cachePermisos.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    
+    const sqlPermisos = `
+        SELECT c.nombreCaracteristica, c.idCaracteristica
+        FROM Robot r
+        JOIN TipoRobotCaracteristica trc ON r.idTipoRobot = trc.idTipoRobot
+        JOIN Caracteristica c ON trc.idCaracteristica = c.idCaracteristica
+        WHERE r.idRobot = ?
+    `;
+    
+    const [reglas] = await connection.execute(sqlPermisos, [idRobot]);
+    
+    cachePermisos.set(cacheKey, {
+        data: reglas,
+        timestamp: Date.now()
+    });
+    
+    return reglas;
+}
 app.post('/api/registrarDatos', async (req, res) => {
     let connection;
     try {
@@ -28,15 +56,8 @@ app.post('/api/registrarDatos', async (req, res) => {
 
         connection = await pool.getConnection();
 
-        const sqlPermisos = `
-            SELECT c.nombreCaracteristica, c.idCaracteristica
-            FROM Robot r
-            JOIN TipoRobotCaracteristica trc ON r.idTipoRobot = trc.idTipoRobot
-            JOIN Característica c ON trc.idCaracteristica = c.idCaracteristica
-            WHERE r.idRobot = ?
-        `;
-
-        const [reglas] = await connection.execute(sqlPermisos, [idRobot]);
+        
+        const reglas = await obtenerPermisosRobot(connection,idRobot);
 
         if (reglas.length === 0) {
             return res.status(403).json({ error: 'Este robot no tiene características configuradas o no existe' });
@@ -51,7 +72,7 @@ app.post('/api/registrarDatos', async (req, res) => {
         const filasParaInsertar = [];
 
         for (const key in datos) {
-
+            if (key === 'id') continue;
             if (mapaPermitido[key]) { 
                 const idCaracteristica = mapaPermitido[key];
                 const valor = String(datos[key]);
