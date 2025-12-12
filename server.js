@@ -20,14 +20,13 @@ const pool = mysql.createPool({
 });
 
 const cachePermisos = new Map();
-const CACHE_TTL = 5 * 60 * 1000; 
 
 async function obtenerPermisosRobot(connection, idRobot) {
     const cacheKey = `robot_${idRobot}`;
     const cached = cachePermisos.get(cacheKey);
     
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.data;
+    if (cached) {
+        return cached;
     }
     
     const sqlPermisos = `
@@ -40,49 +39,101 @@ async function obtenerPermisosRobot(connection, idRobot) {
     
     const [reglas] = await connection.execute(sqlPermisos, [idRobot]);
     
-    cachePermisos.set(cacheKey, {
-        data: reglas,
-        timestamp: Date.now()
-    });
+    cachePermisos.set(cacheKey, reglas);
     
     return reglas;
+}
+
+async function precargarPermisos() {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const ids = [1, 2, 3, 4]; 
+        
+        for (const id of ids) {
+            await obtenerPermisosRobot(connection, id);
+        }
+        
+        console.log('Permisos precargados en caché');
+    } catch (error) {
+        console.error('Error precargando permisos:', error);
+    } finally {
+        if (connection) connection.release();
+    }
 }
 app.post('/api/registrarDatos', async (req, res) => {
     let connection;
     try {
         const datos = req.body;
-        const idRobot = datos.id;
 
-        if (!idRobot) return res.status(400).json({ error: 'Falta id del robot' });
+
+        if (!datos.robots?.data?.id | !datos.robots?.data?.id){
+            return res.status(400).json({ error: 'No hay id de robots' });
+        } 
 
         connection = await pool.getConnection();
 
-        
-        const reglas = await obtenerPermisosRobot(connection,idRobot);
-
-        if (reglas.length === 0) {
-            return res.status(403).json({ error: 'Este robot no tiene características configuradas o no existe' });
-        }
-
-
-        const mapaPermitido = {};
-        reglas.forEach(fila => {
-            mapaPermitido[fila.nombreCaracteristica] = fila.idCaracteristica;
-        });
-
         const filasParaInsertar = [];
         const ahora = new Date();
-        for (const key in datos) {
-            if (key === 'id') continue;
-            if (mapaPermitido[key]) { 
-                const idCaracteristica = mapaPermitido[key];
-                const valor = String(datos[key]);
-                filasParaInsertar.push([idRobot, idCaracteristica, valor, ahora]);
+
+        // Procesa robots ids 1 y 2
+        if (datos.robots?.data) {
+            for (const robotKey in datos.robots.data) {
+                const robotData = datos.robots.data[robotKey];
+                
+                if (!robotData.id) continue;
+
+                const idRobot = robotData.id;
+                const reglas = await obtenerPermisosRobot(connection, idRobot);
+
+                if (reglas.length === 0) continue;
+
+                const mapaPermitido = {};
+                reglas.forEach(fila => {
+                    mapaPermitido[fila.nombreCaracteristica] = fila.idCaracteristica;
+                });
+
+                for (const key in robotData) {
+                    if (key === 'id') continue;
+                    if (mapaPermitido[key]) {
+                        const idCaracteristica = mapaPermitido[key];
+                        const valor = String(robotData[key]);
+                        filasParaInsertar.push([idRobot, idCaracteristica, valor, ahora]);
+                    }
+                }
+            }
+        }
+
+        // Procesar stations (ids 3 y 4)
+        if (datos.stations?.data) {
+            for (const stationKey in datos.stations.data) {
+                const stationData = datos.stations.data[stationKey];
+                
+                if (!stationData.id) continue;
+
+                const idStation = stationData.id;
+                const reglas = await obtenerPermisosRobot(connection, idStation);
+
+                if (reglas.length === 0) continue;
+
+                const mapaPermitido = {};
+                reglas.forEach(fila => {
+                    mapaPermitido[fila.nombreCaracteristica] = fila.idCaracteristica;
+                });
+
+                for (const key in stationData) {
+                    if (key === 'id') continue;
+                    if (mapaPermitido[key]) {
+                        const idCaracteristica = mapaPermitido[key];
+                        const valor = String(stationData[key]);
+                        filasParaInsertar.push([idStation, idCaracteristica, valor, ahora]);
+                    }
+                }
             }
         }
 
         if (filasParaInsertar.length === 0) {
-            return res.status(400).json({ error: 'Ningún dato enviado coincide con la configuración del robot' });
+            return res.status(400).json({ error: 'Ningún dato enviado coincide con las configuraciones' });
         }
 
         const sqlInsert = `INSERT INTO RegistroRobot (idRobot, idCaracteristica, valorCaracteristica, timestamp) VALUES ?`;
@@ -122,8 +173,9 @@ app.get('/api/obtenerTodo', async (req, res) => {
     }
 });
 
-app.listen(PORT, '0.0.0.0',() => {
+app.listen(PORT, '0.0.0.0', async () => {
     console.log('Servidor iniciado');
+    await precargarPermisos();
 
 
 })
