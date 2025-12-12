@@ -67,7 +67,7 @@ app.post('/api/registrarDatos', async (req, res) => {
         const datos = req.body;
 
 
-        if (!datos.robots?.data?.id | !datos.robots?.data?.id){
+        if (!datos.robots?.data[0].id | !datos.stations?.data[0].id){
             return res.status(400).json({ error: 'No hay id de robots' });
         } 
 
