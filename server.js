@@ -78,12 +78,11 @@ app.post('/api/registrarDatos', async (req, res) => {
 
         // Procesa robots ids 1 y 2
         if (datos.robots?.data) {
-            for (const robotKey in datos.robots.data) {
-                const robotData = datos.robots.data[robotKey];
-                
+            for (const robotData of datos.robots.data) {
                 if (!robotData.id) continue;
 
                 const idRobot = robotData.id;
+                console.log('Procesando robot con id:', idRobot);
                 const reglas = await obtenerPermisosRobot(connection, idRobot);
 
                 if (reglas.length === 0) continue;
@@ -106,12 +105,11 @@ app.post('/api/registrarDatos', async (req, res) => {
 
         // Procesar stations (ids 3 y 4)
         if (datos.stations?.data) {
-            for (const stationKey in datos.stations.data) {
-                const stationData = datos.stations.data[stationKey];
-                
+            for (const stationData of datos.stations.data) {
                 if (!stationData.id) continue;
 
                 const idStation = stationData.id;
+                console.log('Procesando station con id:', idStation);
                 const reglas = await obtenerPermisosRobot(connection, idStation);
 
                 if (reglas.length === 0) continue;
