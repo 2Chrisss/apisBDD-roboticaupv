@@ -134,6 +134,8 @@ app.post('/api/registrarDatos', async (req, res) => {
             return res.status(400).json({ error: 'Ningún dato enviado coincide con las configuraciones' });
         }
 
+        console.log('Filas a insertar:', JSON.stringify(filasParaInsertar, null, 2));
+
         const sqlInsert = `INSERT INTO RegistroRobot (idRobot, idCaracteristica, valorCaracteristica, timestamp) VALUES ?`;
         const [result] = await connection.query(sqlInsert, [filasParaInsertar]);
 
