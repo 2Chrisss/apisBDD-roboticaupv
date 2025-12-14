@@ -94,6 +94,7 @@ app.post('/api/registrarDatos', async (req, res) => {
 
                 for (const key in robotData) {
                     if (key === 'id') continue;
+                    if (robotData[key] === null || robotData[key] === undefined) continue;
                     if (mapaPermitido[key]) {
                         const idCaracteristica = mapaPermitido[key];
                         const valor = String(robotData[key]);
@@ -121,6 +122,7 @@ app.post('/api/registrarDatos', async (req, res) => {
 
                 for (const key in stationData) {
                     if (key === 'id') continue;
+                    if (stationData[key] === null || stationData[key] === undefined) continue;
                     if (mapaPermitido[key]) {
                         const idCaracteristica = mapaPermitido[key];
                         const valor = String(stationData[key]);
@@ -134,7 +136,6 @@ app.post('/api/registrarDatos', async (req, res) => {
             return res.status(400).json({ error: 'Ningún dato enviado coincide con las configuraciones' });
         }
 
-        console.log('Filas a insertar:', JSON.stringify(filasParaInsertar, null, 2));
 
         const sqlInsert = `INSERT INTO RegistroRobot (idRobot, idCaracteristica, valorCaracteristica, timestamp) VALUES ?`;
         const [result] = await connection.query(sqlInsert, [filasParaInsertar]);
