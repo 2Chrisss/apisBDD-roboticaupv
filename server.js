@@ -174,6 +174,36 @@ app.get('/api/obtenerTodo', async (req, res) => {
     }
 });
 
+app.get('/api/registrosXdia', async (req, res) => {
+    let connection;
+    try {
+        const { fecha } = req.query; 
+        
+        if (!fecha) {
+            return res.status(400).json({ error: 'Se requiere el parámetro fecha (YYYY-MM-DD)' });
+        }
+
+        connection = await pool.getConnection();
+        
+        const [rows] = await connection.execute(
+            'SELECT * FROM RegistroRobot WHERE DATE(timestamp) = ?',
+            [fecha]
+        );
+
+        res.json({ 
+            success: true, 
+            fecha: fecha,
+            cantidad: rows.length,
+            datos: rows 
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener registros por día' });
+    } finally {
+        if (connection) connection.release();
+    }
+})
 app.listen(PORT, '0.0.0.0', async () => {
     console.log('Servidor iniciado');
     await precargarPermisos();
